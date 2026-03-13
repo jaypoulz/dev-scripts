@@ -376,7 +376,16 @@ function sync_repo_and_patch {
     git am --abort || true
     git checkout ${REPO_BRANCH}
     git fetch origin
+    # Stash local changes so rebase can proceed (avoids "cannot rebase: You have unstaged changes")
+    SYNC_HAD_CHANGES=
+    if [ -n "$(git status --porcelain)" ]; then
+        git stash push -m "sync_repo_and_patch: auto-stash before rebase"
+        SYNC_HAD_CHANGES=1
+    fi
     git rebase origin/${REPO_BRANCH}
+    if [ -n "${SYNC_HAD_CHANGES}" ]; then
+        git stash pop || true
+    fi
 
     # If set, use the specified PR number
     REPO_PR_VAR="${REPO_NAME}_REPO_PR"
